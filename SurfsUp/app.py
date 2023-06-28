@@ -75,7 +75,8 @@ def precipitation():
 def stations():
 
     # Queries the stations from the data; then groups and orders the stations by id
-    stations = session.query(Measurement.station, func.count(Measurement.id)).group_by(Measurement.station).order_by(func.count(Measurement.id).desc()).all()
+    stations = session.query(Measurement.station, func.count(Measurement.id)).group_by(Measurement.station)\
+                      .order_by(func.count(Measurement.id).desc()).all()
 
     # Puts the results of the query into a dictonary
     stations_dict = dict(stations)
@@ -89,8 +90,9 @@ def stations():
 @app.route("/api/v1.0/tobs")
 def tobs():
 
-    # Queries the data for the station and observed temp and filters the queried data for dates from 8-23-2016 and above
-    max_temp_obs = session.query(Measurement.station, Measurement.tobs).filter(Measurement.station == 'USC00519281').filter(Measurement.date >= '2016-08-23').all()
+    # Queries the data for the most active station and observed temp then filters the queried data for the most recent year
+    max_temp_obs = session.query(Measurement.station, Measurement.tobs).filter(Measurement.station == 'USC00519281')\
+                          .filter(Measurement.date >= '2016-08-23').all()
 
     # Puts the results of the query into a dictonary
     tobs_dict = dict(max_temp_obs)
@@ -154,6 +156,7 @@ def start_end(start, end):
 
         # Returns the list
         return jsonify(tobsall)
+    
     else:
 
         return jsonify({"message": "No data found for the given date range."})
