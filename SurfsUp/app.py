@@ -91,17 +91,22 @@ def stations():
 def tobs():
 
     # Queries the data for the most active station and observed temp then filters the queried data for the most recent year
-    max_temp_obs = session.query(Measurement.station, Measurement.tobs).filter(Measurement.station == 'USC00519281')\
-                          .filter(Measurement.date >= '2016-08-23').all()
+    temp_obs = session.query(Measurement.date, Measurement.tobs).filter(Measurement.date >= '2016-08-23')\
+                      .filter(Measurement.station == 'USC00519281').all()
 
-    # Puts the results of the query into a dictonary
-    tobs_dict = dict(max_temp_obs)
+    # Creates a dictionary and appends the queried data to that dictionary
+    tobs_list = []
+    for date, tobs in temp_obs:
+        tobs_dict = {}
+        tobs_dict['date'] = date
+        tobs_dict['tobs'] = tobs
+        tobs_list.append(tobs_dict)
 
     # Closes the session
     session.close()
 
     # Returns the dictionary as a json
-    return jsonify(tobs_dict)
+    return jsonify(tobs_list)
 
 @app.route("/api/v1.0/<start>")
 def start(start):
@@ -109,22 +114,21 @@ def start(start):
     # Gets the min value, mean value, and max value of an observed temp from a specified date from the sql data
     result = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).filter(Measurement.date >= start).all()
     
-    # Creates an empty list for the observed temp results
+    # Creates a dictionary and appends the queried data to that dictionary
     tobsall = []
-
-    # Loops through the query and gets the min, avg, and max value and appends it to the empty list
     for min, avg, max in result:
-        tobs_dict = {}
-        tobs_dict["Min"] = min
-        tobs_dict["Average"] = avg
-        tobs_dict["Max"] = max
-        tobsall.append(tobs_dict)
+            tobs_dict = {}
+            tobs_dict["Min"] = min
+            tobs_dict["Average"] = avg
+            tobs_dict["Max"] = max
+            tobsall.append(tobs_dict)
         
     # Closes the session
     session.close()
 
     # Returns the list of the queried data
     return jsonify(tobsall)
+
 
 @app.route("/api/v1.0/<start>/<end>")
 def start_end(start, end):
@@ -134,32 +138,24 @@ def start_end(start, end):
     end_date = dt.datetime.strptime(end, "%Y-%m-%d").date()
 
     # Queries the sql data for the min, avg, and max temp of the start and end date
-    result = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs)).\
-        filter(Measurement.date >= start_date).filter(Measurement.date <= end_date).all()
+    result = session.query(func.min(Measurement.tobs), func.avg(Measurement.tobs), func.max(Measurement.tobs))\
+                    .filter(Measurement.date >= start_date).filter(Measurement.date <= end_date).all()
 
-    # Tries to get the data if there are valid dates, if not; it returns an error message
-    if result:
- 
-        # Creates an empty list for the data
-        tobsall = []
 
-        # Loops through the queried data and appends it to the empty list
-        for min_temp, avg_temp, max_temp in result:
+    # Creates a dictionary and appends the queried data to that dictionary
+    tobsall = []
+    for min_temp, avg_temp, max_temp in result:
             tobs_dict = {}
             tobs_dict["Min"] = min_temp
             tobs_dict["Average"] = avg_temp
             tobs_dict["Max"] = max_temp
             tobsall.append(tobs_dict)
 
-        # Closes the session
-        session.close()
+    # Closes the session
+    session.close()
 
-        # Returns the list
-        return jsonify(tobsall)
-    
-    else:
-
-        return jsonify({"message": "No data found for the given date range."})
+    # Returns the list
+    return jsonify(tobsall)
 
 
 if __name__ == '__main__':
